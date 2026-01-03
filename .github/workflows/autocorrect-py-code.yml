@@ -30,7 +30,7 @@ jobs:
         id: run_script
         run: |
           set +e
-          OUTPUT=$(python your_script.py 2>&1)
+          OUTPUT=$(python sample_wrong.py 2>&1)
           echo "$OUTPUT" > error.log
           echo "output<<EOF" >> $GITHUB_OUTPUT
           echo "$OUTPUT" >> $GITHUB_OUTPUT
@@ -42,28 +42,26 @@ jobs:
         run: |
           if grep -q "Traceback (most recent call last):" error.log; then
             echo "traceback=true" >> $GITHUB_OUTPUT
-          elif grep -q "traceback" error.log; then
-            echo "traceback=false" >> $GITHUB_OUTPUT
           else
             echo "traceback=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Autocorrect all Python files
+      - name: Fix all Python files
         if: steps.check_traceback.outputs.traceback == 'true'
         run: |
-          echo "Autocorrecting all Python files..."
+          echo "Applying fixes to all Python files..."
           black .
           autopep8 --in-place --recursive .
           ruff check --fix .
 
-      - name: Create Pull Request
+      - name: Create Pull Request with fixes
         if: steps.check_traceback.outputs.traceback == 'true'
         uses: peter-evans/create-pull-request@v6
         with:
-          commit-message: "Autocorrect all Python files after traceback"
+          commit-message: "Fix all Python files after traceback"
           branch: autocorrect-fix
-          title: "Autocorrect all Python files after traceback"
+          title: "Fix all Python files after traceback"
           body: |
             This PR was automatically generated because a real Python traceback was detected.
-            - Autocorrect applied to **all Python files** using black, autopep8, and ruff.
+            - Fixes applied to **all Python files** using black, autopep8, and ruff.
             - Custom tracebacks (via `traceback` module) were ignored.
